@@ -1,10 +1,13 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Soenneker.Css.Minify.Abstract;
+using Soenneker.Extensions.Char;
+using Soenneker.Extensions.String;
 using Soenneker.Extensions.Task;
 using Soenneker.Utils.File.Abstract;
 using Soenneker.Utils.PooledStringBuilders;
+using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Soenneker.Css.Minify;
 
@@ -15,9 +18,10 @@ public sealed class CssMinifier : ICssMinifier
 
     public CssMinifier(IFileUtil fileUtil)
     {
-        _fileUtil = fileUtil ?? throw new ArgumentNullException(nameof(fileUtil));
+        _fileUtil = fileUtil;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public string Minify(string css) => css.Length == 0 ? string.Empty : Minify(css.AsSpan());
 
     public string Minify(ReadOnlySpan<char> css)
@@ -25,7 +29,8 @@ public sealed class CssMinifier : ICssMinifier
         if (css.IsEmpty)
             return string.Empty;
 
-        var capacity = Math.Max(32, css.Length);
+        // Capacity heuristic: try to avoid growth for common cases.
+        int capacity = css.Length < 32 ? 32 : css.Length;
 
         var sb = new PooledStringBuilder(capacity);
 
@@ -42,10 +47,10 @@ public sealed class CssMinifier : ICssMinifier
 
     public async ValueTask MinifyFile(string inputPath, string outputPath, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(inputPath))
+        if (inputPath.IsNullOrWhiteSpace())
             throw new ArgumentException("Input path must be provided", nameof(inputPath));
 
-        if (string.IsNullOrWhiteSpace(outputPath))
+        if (outputPath.IsNullOrWhiteSpace())
             throw new ArgumentException("Output path must be provided", nameof(outputPath));
 
         string css = await _fileUtil.Read(inputPath, cancellationToken: cancellationToken).NoSync();
@@ -59,26 +64,23 @@ public sealed class CssMinifier : ICssMinifier
         char stringQuote = '\0';
         bool inComment = false;
         bool pendingSpace = false;
+
         bool inCalc = false;
         int calcParenDepth = 0;
+
         int blockDepth = 0;
+
         char prevNonWhitespace = '\0';
         char prevPrevNonWhitespace = '\0';
+
         bool inUnicodeRangeToken = false;
 
-        void UpdatePrev(char value)
-        {
-            if (value == '\0')
-                return;
+        int len = css.Length;
 
-            prevPrevNonWhitespace = prevNonWhitespace;
-            prevNonWhitespace = value;
-        }
-
-        for (int i = 0; i < css.Length; i++)
+        for (int i = 0; i < len; i++)
         {
             char c = css[i];
-            char next = i + 1 < css.Length ? css[i + 1] : '\0';
+            char next = (i + 1 < len) ? css[i + 1] : '\0';
 
             if (inComment)
             {
@@ -95,21 +97,35 @@ public sealed class CssMinifier : ICssMinifier
             {
                 sb.Append(c);
 
+                // Preserve escapes as-is.
                 if (c == '\\' && next != '\0')
                 {
                     sb.Append(next);
                     i++;
-                    UpdatePrev(next);
+
+                    // Update prevs with escaped char as the last "significant" one.
+                    if (next != '\0')
+                    {
+                        prevPrevNonWhitespace = prevNonWhitespace;
+                        prevNonWhitespace = next;
+                    }
+
                     continue;
                 }
 
                 if (c == stringQuote)
                     inString = false;
 
-                UpdatePrev(c);
+                if (c != '\0')
+                {
+                    prevPrevNonWhitespace = prevNonWhitespace;
+                    prevNonWhitespace = c;
+                }
+
                 continue;
             }
 
+            // Comment start
             if (c == '/' && next == '*')
             {
                 inComment = true;
@@ -120,7 +136,7 @@ public sealed class CssMinifier : ICssMinifier
             if (inUnicodeRangeToken && IsUnicodeRangeTerminator(c))
                 inUnicodeRangeToken = false;
 
-            if (char.IsWhiteSpace(c))
+            if (c.IsAsciiWhiteSpace())
             {
                 pendingSpace = true;
                 continue;
@@ -136,20 +152,27 @@ public sealed class CssMinifier : ICssMinifier
 
             if (IsCalcStart(css, i))
             {
+                // Avoid per-call allocations; literal is interned.
                 sb.Append("calc(");
                 inCalc = true;
                 calcParenDepth = 1;
-                UpdatePrev('(');
-                i += 4;
+
+                prevPrevNonWhitespace = prevNonWhitespace;
+                prevNonWhitespace = '(';
+
+                i += 4; // we consumed "calc("
                 continue;
             }
 
-            if (c == '"' || c == '\'')
+            if (c is '"' or '\'')
             {
                 sb.Append(c);
                 inString = true;
                 stringQuote = c;
-                UpdatePrev(c);
+
+                prevPrevNonWhitespace = prevNonWhitespace;
+                prevNonWhitespace = c;
+
                 continue;
             }
 
@@ -170,48 +193,71 @@ public sealed class CssMinifier : ICssMinifier
                 }
             }
 
+            // Drop unnecessary ; before block end
             if (c == ';' && (next == '}' || IsSemicolonBeforeBlockEnd(css, i)))
                 continue;
 
-            if (inUnicodeRangeToken == false && IsNumberStart(css, i, prevNonWhitespace, prevPrevNonWhitespace))
+            if (!inUnicodeRangeToken && IsNumberStart(css, i, prevNonWhitespace, prevPrevNonWhitespace))
             {
                 i = AppendNormalizedNumber(css, i, ref sb, out char lastAppended);
+
                 if (lastAppended != '\0')
-                    UpdatePrev(lastAppended);
+                {
+                    prevPrevNonWhitespace = prevNonWhitespace;
+                    prevNonWhitespace = lastAppended;
+                }
+
                 continue;
             }
 
             sb.Append(c);
-            UpdatePrev(c);
+
+            if (c != '\0')
+            {
+                prevPrevNonWhitespace = prevNonWhitespace;
+                prevNonWhitespace = c;
+            }
 
             if (!inUnicodeRangeToken && (c is 'U' or 'u') && next == '+')
                 inUnicodeRangeToken = true;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsCalcStart(ReadOnlySpan<char> css, int index)
     {
-        if (index + 4 >= css.Length)
+        // Need "calc(" => 5 chars; we check index+4
+        if ((uint)(index + 4) >= (uint)css.Length)
             return false;
 
-        char c0 = css[index];
-        if (c0 is not ('c' or 'C'))
-            return false;
-
-        if (!IsCharEqualIgnoreCase(css[index + 1], 'a') ||
-            !IsCharEqualIgnoreCase(css[index + 2], 'l') ||
-            !IsCharEqualIgnoreCase(css[index + 3], 'c') ||
+        // Case-insensitive ASCII match: c a l c (
+        if (!IsAsciiCharEqualIgnoreCase(css[index], 'c') ||
+            !IsAsciiCharEqualIgnoreCase(css[index + 1], 'a') ||
+            !IsAsciiCharEqualIgnoreCase(css[index + 2], 'l') ||
+            !IsAsciiCharEqualIgnoreCase(css[index + 3], 'c') ||
             css[index + 4] != '(')
+        {
             return false;
+        }
 
+        // Avoid matching "mycalc(" as an ident continuation
         if (index > 0 && IsIdentChar(css[index - 1]))
             return false;
 
         return true;
     }
 
-    private static bool IsCharEqualIgnoreCase(char a, char b) =>
-        a == b || char.ToUpperInvariant(a) == char.ToUpperInvariant(b);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsAsciiCharEqualIgnoreCase(char a, char bLower)
+    {
+        // bLower must be lowercase ASCII letter for this to be valid.
+        // For non-letters, this still works as equality check via fast path.
+        char x = a;
+        if ((uint)(x - 'A') <= ('Z' - 'A'))
+            x = (char)(x | 0x20);
+
+        return x == bLower;
+    }
 
     private static bool ShouldEmitSpace(char prev, char current, bool inBlock, bool inCalc)
     {
@@ -242,6 +288,7 @@ public sealed class CssMinifier : ICssMinifier
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsNoSpaceBefore(char c, bool inBlock)
     {
         if (c is ',' or ';' or ')' or ']' or '}' or '{' or '>' or '+' or '~' or '=')
@@ -253,6 +300,7 @@ public sealed class CssMinifier : ICssMinifier
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsNoSpaceAfter(char c, bool inBlock)
     {
         if (c is ',' or '(' or '[' or '{' or '}' or '>' or '+' or '~' or '=')
@@ -264,30 +312,34 @@ public sealed class CssMinifier : ICssMinifier
         return false;
     }
 
-    private static bool IsIdentChar(char c) =>
-        char.IsLetterOrDigit(c) || c is '_' or '-' or '\\';
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsIdentChar(char c)
+    {
+        // ASCII fast path (most CSS)
+        if (c.IsAsciiAlphaNum())
+            return true;
 
+        return c is '_' or '-' or '\\' || char.IsLetterOrDigit(c);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsUnicodeRangeTerminator(char c) =>
-        char.IsWhiteSpace(c) || c is ',' or ';' or ')' or '}' or '{';
+        c.IsAsciiWhiteSpace() || c is ',' or ';' or ')' or '}' or '{';
 
     private static bool IsSemicolonBeforeBlockEnd(ReadOnlySpan<char> css, int semicolonIndex)
     {
-        for (int i = semicolonIndex + 1; i < css.Length; i++)
+        int len = css.Length;
+
+        for (int i = semicolonIndex + 1; i < len; i++)
         {
             char c = css[i];
 
-            if (char.IsWhiteSpace(c))
+            if (c.IsAsciiWhiteSpace())
                 continue;
 
-            if (c == '/' && i + 1 < css.Length && css[i + 1] == '*')
+            if (c == '/' && i + 1 < len && css[i + 1] == '*')
             {
-                i += 2;
-                while (i + 1 < css.Length && !(css[i] == '*' && css[i + 1] == '/'))
-                    i++;
-
-                if (i + 1 < css.Length)
-                    i++;
-
+                i = SkipBlockComment(css, i);
                 continue;
             }
 
@@ -297,27 +349,30 @@ public sealed class CssMinifier : ICssMinifier
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValueTokenChar(char c) =>
-        char.IsLetterOrDigit(c) || c is '%' or ')' or ']' or '"' or '\'' or '.' or '#';
+        c.IsAsciiAlphaNum() || c is '%' or ')' or ']' or '"' or '\'' or '.' or '#';
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValueTokenStart(char c) =>
-        char.IsLetterOrDigit(c) || c is '.' or '-' or '+' or '#' or '"' or '\'';
+        c.IsAsciiAlphaNum() || c is '.' or '-' or '+' or '#' or '"' or '\'';
 
     private static bool IsNumberStart(ReadOnlySpan<char> css, int index, char prevNonWhitespace, char prevPrevNonWhitespace)
     {
         char c = css[index];
-        char next = index + 1 < css.Length ? css[index + 1] : '\0';
+        char next = (index + 1 < css.Length) ? css[index + 1] : '\0';
 
+        // Prevent "U+10-1F" etc. from being treated as numeric start after U+
         if (prevNonWhitespace == '+' && (prevPrevNonWhitespace is 'U' or 'u'))
             return false;
 
-        if (char.IsDigit(c))
+        if (c.IsAsciiDigit() || char.IsDigit(c))
             return true;
 
-        if (c == '.' && char.IsDigit(next))
+        if (c == '.' && (next.IsAsciiDigit() || char.IsDigit(next)))
             return true;
 
-        if ((c == '-' || c == '+') && (char.IsDigit(next) || next == '.'))
+        if ((c == '-' || c == '+') && (next.IsAsciiDigit() || next == '.' || char.IsDigit(next)))
         {
             if (prevNonWhitespace == '\0' || IsDelimiter(prevNonWhitespace))
                 return true;
@@ -326,12 +381,14 @@ public sealed class CssMinifier : ICssMinifier
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsDelimiter(char c) =>
-        char.IsWhiteSpace(c) || c is ':' or ',' or ';' or '(' or '{' or '[' or '!' or '=' or '>' or '+' or '-' or '*' or '/' or '~';
+        c.IsAsciiWhiteSpace() || c is ':' or ',' or ';' or '(' or '{' or '[' or '!' or '=' or '>' or '+' or '-' or '*' or '/' or '~';
 
     private static int AppendNormalizedNumber(ReadOnlySpan<char> css, int startIndex, ref PooledStringBuilder sb, out char lastAppended)
     {
         lastAppended = '\0';
+
         int i = startIndex;
         int len = css.Length;
 
@@ -343,10 +400,12 @@ public sealed class CssMinifier : ICssMinifier
         }
 
         int intStart = i;
-        while (i < len && char.IsDigit(css[i]))
+
+        while (i < len && css[i].IsDigit())
             i++;
 
         int intEnd = i;
+
         bool hasDot = i < len && css[i] == '.';
 
         int fracStart = 0;
@@ -356,8 +415,10 @@ public sealed class CssMinifier : ICssMinifier
         {
             i++;
             fracStart = i;
-            while (i < len && char.IsDigit(css[i]))
+
+            while (i < len && css[i].IsDigit())
                 i++;
+
             fracEnd = i;
         }
 
@@ -367,8 +428,10 @@ public sealed class CssMinifier : ICssMinifier
             return startIndex;
 
         int unitStart = i;
-        while (i < len && (char.IsLetter(css[i]) || css[i] == '%'))
+
+        while (i < len && IsUnitChar(css[i]))
             i++;
+
         int unitEnd = i;
 
         ReadOnlySpan<char> intPart = css.Slice(intStart, intEnd - intStart);
@@ -379,6 +442,7 @@ public sealed class CssMinifier : ICssMinifier
         bool isPercentUnit = hasUnit && css[unitStart] == '%';
         char nextSig = NextSignificantChar(css, unitEnd);
 
+        // Keep "0%" if directly before '{' (unicode-range / edge cases)
         if (isZero && isPercentUnit && nextSig == '{')
         {
             sb.Append('0');
@@ -424,6 +488,7 @@ public sealed class CssMinifier : ICssMinifier
 
             sb.Append('.');
             sb.Append(fracPart);
+
             if (fracPart.Length > 0)
                 lastAppended = fracPart[^1];
         }
@@ -438,6 +503,7 @@ public sealed class CssMinifier : ICssMinifier
             sb.Append(intPart);
             sb.Append('.');
             sb.Append(fracPart);
+
             if (fracPart.Length > 0)
                 lastAppended = fracPart[^1];
         }
@@ -451,6 +517,7 @@ public sealed class CssMinifier : ICssMinifier
         return unitEnd - 1;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsAllZeros(ReadOnlySpan<char> span)
     {
         for (int i = 0; i < span.Length; i++)
@@ -462,6 +529,7 @@ public sealed class CssMinifier : ICssMinifier
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ReadOnlySpan<char> TrimLeadingZeros(ReadOnlySpan<char> span)
     {
         int i = 0;
@@ -471,6 +539,7 @@ public sealed class CssMinifier : ICssMinifier
         return span.Slice(i);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ReadOnlySpan<char> TrimTrailingZeros(ReadOnlySpan<char> span)
     {
         int i = span.Length - 1;
@@ -482,22 +551,18 @@ public sealed class CssMinifier : ICssMinifier
 
     private static char NextSignificantChar(ReadOnlySpan<char> css, int startIndex)
     {
-        for (int i = startIndex; i < css.Length; i++)
+        int len = css.Length;
+
+        for (int i = startIndex; i < len; i++)
         {
             char c = css[i];
 
-            if (char.IsWhiteSpace(c))
+            if (c.IsAsciiWhiteSpace())
                 continue;
 
-            if (c == '/' && i + 1 < css.Length && css[i + 1] == '*')
+            if (c == '/' && i + 1 < len && css[i + 1] == '*')
             {
-                i += 2;
-                while (i + 1 < css.Length && !(css[i] == '*' && css[i + 1] == '/'))
-                    i++;
-
-                if (i + 1 < css.Length)
-                    i++;
-
+                i = SkipBlockComment(css, i);
                 continue;
             }
 
@@ -505,5 +570,31 @@ public sealed class CssMinifier : ICssMinifier
         }
 
         return '\0';
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SkipBlockComment(ReadOnlySpan<char> css, int slashIndex)
+    {
+        // assumes css[slashIndex] == '/' and next is '*'
+        int len = css.Length;
+        int i = slashIndex + 2;
+
+        while (i + 1 < len && !(css[i] == '*' && css[i + 1] == '/'))
+            i++;
+
+        if (i + 1 < len)
+            i++; // position on '/'
+
+        return i;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsUnitChar(char c)
+    {
+        // Units are typically ASCII letters or '%'. Keep a fallback for odd unicode units.
+        if (c == '%')
+            return true;
+
+        return c.IsAsciiLetter() || char.IsLetter(c);
     }
 }

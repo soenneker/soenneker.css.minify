@@ -60,24 +60,24 @@ public sealed class CssMinifier : ICssMinifier
 
     private static void MinifyInto(ReadOnlySpan<char> css, ref PooledStringBuilder sb)
     {
-        bool inString = false;
-        char stringQuote = '\0';
-        bool inComment = false;
-        bool pendingSpace = false;
+        var inString = false;
+        var stringQuote = '\0';
+        var inComment = false;
+        var pendingSpace = false;
 
-        bool inCalc = false;
-        int calcParenDepth = 0;
+        var inCalc = false;
+        var calcParenDepth = 0;
 
-        int blockDepth = 0;
+        var blockDepth = 0;
 
-        char prevNonWhitespace = '\0';
-        char prevPrevNonWhitespace = '\0';
+        var prevNonWhitespace = '\0';
+        var prevPrevNonWhitespace = '\0';
 
-        bool inUnicodeRangeToken = false;
+        var inUnicodeRangeToken = false;
 
         int len = css.Length;
 
-        for (int i = 0; i < len; i++)
+        for (var i = 0; i < len; i++)
         {
             char c = css[i];
             char next = (i + 1 < len) ? css[i + 1] : '\0';
@@ -316,7 +316,7 @@ public sealed class CssMinifier : ICssMinifier
     private static bool IsIdentChar(char c)
     {
         // ASCII fast path (most CSS)
-        if (c.IsAsciiAlphaNum())
+        if (c.IsAsciiLetterOrDigit())
             return true;
 
         return c is '_' or '-' or '\\' || char.IsLetterOrDigit(c);
@@ -351,11 +351,11 @@ public sealed class CssMinifier : ICssMinifier
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValueTokenChar(char c) =>
-        c.IsAsciiAlphaNum() || c is '%' or ')' or ']' or '"' or '\'' or '.' or '#';
+        c.IsAsciiLetterOrDigit() || c is '%' or ')' or ']' or '"' or '\'' or '.' or '#';
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValueTokenStart(char c) =>
-        c.IsAsciiAlphaNum() || c is '.' or '-' or '+' or '#' or '"' or '\'';
+        c.IsAsciiLetterOrDigit() || c is '.' or '-' or '+' or '#' or '"' or '\'';
 
     private static bool IsNumberStart(ReadOnlySpan<char> css, int index, char prevNonWhitespace, char prevPrevNonWhitespace)
     {
@@ -392,7 +392,7 @@ public sealed class CssMinifier : ICssMinifier
         int i = startIndex;
         int len = css.Length;
 
-        char signChar = '\0';
+        var signChar = '\0';
         if (css[i] is '+' or '-')
         {
             signChar = css[i];
@@ -401,22 +401,22 @@ public sealed class CssMinifier : ICssMinifier
 
         int intStart = i;
 
-        while (i < len && css[i].IsDigit())
+        while (i < len && css[i].IsDigitFast())
             i++;
 
         int intEnd = i;
 
         bool hasDot = i < len && css[i] == '.';
 
-        int fracStart = 0;
-        int fracEnd = 0;
+        var fracStart = 0;
+        var fracEnd = 0;
 
         if (hasDot)
         {
             i++;
             fracStart = i;
 
-            while (i < len && css[i].IsDigit())
+            while (i < len && css[i].IsDigitFast())
                 i++;
 
             fracEnd = i;
@@ -520,7 +520,7 @@ public sealed class CssMinifier : ICssMinifier
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsAllZeros(ReadOnlySpan<char> span)
     {
-        for (int i = 0; i < span.Length; i++)
+        for (var i = 0; i < span.Length; i++)
         {
             if (span[i] != '0')
                 return false;
@@ -532,7 +532,7 @@ public sealed class CssMinifier : ICssMinifier
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ReadOnlySpan<char> TrimLeadingZeros(ReadOnlySpan<char> span)
     {
-        int i = 0;
+        var i = 0;
         while (i < span.Length && span[i] == '0')
             i++;
 

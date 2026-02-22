@@ -44,7 +44,7 @@
 
     <ItemGroup>
       <PackageReference Include="Soenneker.Utils.File" Version="4.0.2064" />
-      <PackageReference Include="Soenneker.Utils.PooledStringBuilders" Version="4.0.10" />
+      <PackageReference Include="Soenneker.Utils.PooledStringBuilders" Version="4.0.12" />
     </ItemGroup>
 
     <ItemGroup>

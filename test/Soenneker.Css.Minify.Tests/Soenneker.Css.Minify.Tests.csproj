@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Soenneker.Css.Minify.csproj" />
+        <ProjectReference Include="..\..\src\Soenneker.Css.Minify\Soenneker.Css.Minify.csproj" />
     </ItemGroup>
 
     <ItemGroup>

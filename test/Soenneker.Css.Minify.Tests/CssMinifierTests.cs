@@ -2,22 +2,21 @@ using System;
 using System.IO;
 using AwesomeAssertions;
 using Soenneker.Css.Minify.Abstract;
-using Soenneker.Tests.FixturedUnit;
-using Xunit;
+using Soenneker.Tests.HostedUnit;
 
 namespace Soenneker.Css.Minify.Tests;
 
-[Collection("Collection")]
-public sealed class CssMinifierTests : FixturedUnitTest
+[ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
+public sealed class CssMinifierTests : HostedUnitTest
 {
     private readonly ICssMinifier _sut;
 
-    public CssMinifierTests(Fixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public CssMinifierTests(Host host) : base(host)
     {
         _sut = Resolve<ICssMinifier>(scoped: true);
     }
 
-    [Fact]
+    [Test]
     public void Minify_removes_comments_and_whitespace()
     {
         ICssMinifier sut = _sut;
@@ -30,7 +29,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_preserves_value_separators()
     {
         ICssMinifier sut = _sut;
@@ -43,7 +42,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_preserves_strings_and_calc_spacing()
     {
         ICssMinifier sut = _sut;
@@ -56,7 +55,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_queries()
     {
         ICssMinifier sut = _sut;
@@ -69,7 +68,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_custom_properties_and_var()
     {
         ICssMinifier sut = _sut;
@@ -82,7 +81,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_preserves_url_strings()
     {
         ICssMinifier sut = _sut;
@@ -95,7 +94,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_keyframes()
     {
         ICssMinifier sut = _sut;
@@ -108,7 +107,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_rule()
     {
         ICssMinifier sut = _sut;
@@ -121,7 +120,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_font_face()
     {
         ICssMinifier sut = _sut;
@@ -134,7 +133,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_preserves_descendant_selectors()
     {
         ICssMinifier sut = _sut;
@@ -147,7 +146,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_normalizes_numbers_and_zero_units()
     {
         ICssMinifier sut = _sut;
@@ -160,7 +159,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_strips_comments_between_rules()
     {
         ICssMinifier sut = _sut;
@@ -173,7 +172,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_multiple_selectors_and_combinators()
     {
         ICssMinifier sut = _sut;
@@ -186,7 +185,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_attribute_and_pseudo_selectors()
     {
         ICssMinifier sut = _sut;
@@ -199,7 +198,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_important_and_multiple_values()
     {
         ICssMinifier sut = _sut;
@@ -212,7 +211,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_gradient_and_function_values()
     {
         ICssMinifier sut = _sut;
@@ -225,7 +224,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_var_fallback()
     {
         ICssMinifier sut = _sut;
@@ -238,7 +237,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_keyframes_from_to()
     {
         ICssMinifier sut = _sut;
@@ -251,7 +250,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_container_query()
     {
         ICssMinifier sut = _sut;
@@ -264,7 +263,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_layer_rule()
     {
         ICssMinifier sut = _sut;
@@ -277,7 +276,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_namespace_rule()
     {
         ICssMinifier sut = _sut;
@@ -290,7 +289,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_import_rule()
     {
         ICssMinifier sut = _sut;
@@ -303,7 +302,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_page_rule()
     {
         ICssMinifier sut = _sut;
@@ -316,7 +315,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_property_rule()
     {
         ICssMinifier sut = _sut;
@@ -329,7 +328,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_counter_style_rule()
     {
         ICssMinifier sut = _sut;
@@ -342,7 +341,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_selector()
     {
         ICssMinifier sut = _sut;
@@ -355,7 +354,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_child_formula()
     {
         ICssMinifier sut = _sut;
@@ -368,7 +367,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_unicode_range()
     {
         ICssMinifier sut = _sut;
@@ -381,7 +380,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_preserves_data_uri()
     {
         ICssMinifier sut = _sut;
@@ -394,7 +393,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_escaped_identifiers()
     {
         ICssMinifier sut = _sut;
@@ -407,7 +406,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nested_calc_and_var()
     {
         ICssMinifier sut = _sut;
@@ -420,7 +419,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_font_feature_values()
     {
         ICssMinifier sut = _sut;
@@ -433,7 +432,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_document_rule()
     {
         ICssMinifier sut = _sut;
@@ -446,7 +445,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_starting_style_rule()
     {
         ICssMinifier sut = _sut;
@@ -459,7 +458,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_last_child_formula()
     {
         ICssMinifier sut = _sut;
@@ -472,7 +471,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_has_and_where_selectors()
     {
         ICssMinifier sut = _sut;
@@ -485,7 +484,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_nesting()
     {
         ICssMinifier sut = _sut;
@@ -498,7 +497,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_layer_ordering()
     {
         ICssMinifier sut = _sut;
@@ -511,7 +510,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_scope_rule()
     {
         ICssMinifier sut = _sut;
@@ -524,7 +523,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_container_style_query()
     {
         ICssMinifier sut = _sut;
@@ -537,7 +536,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_not()
     {
         ICssMinifier sut = _sut;
@@ -550,7 +549,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_complex_conditions()
     {
         ICssMinifier sut = _sut;
@@ -563,7 +562,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_container_and_or()
     {
         ICssMinifier sut = _sut;
@@ -576,7 +575,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_is_and_where_selectors()
     {
         ICssMinifier sut = _sut;
@@ -589,7 +588,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_url_without_quotes()
     {
         ICssMinifier sut = _sut;
@@ -602,7 +601,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_data_uri_without_quotes()
     {
         ICssMinifier sut = _sut;
@@ -615,7 +614,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_viewport_rule()
     {
         ICssMinifier sut = _sut;
@@ -628,7 +627,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_page_margin_boxes()
     {
         ICssMinifier sut = _sut;
@@ -641,7 +640,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_escaped_unicode_identifier()
     {
         ICssMinifier sut = _sut;
@@ -654,7 +653,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_not_only()
     {
         ICssMinifier sut = _sut;
@@ -667,7 +666,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_container_style_and()
     {
         ICssMinifier sut = _sut;
@@ -680,7 +679,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_of_type()
     {
         ICssMinifier sut = _sut;
@@ -693,7 +692,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_last_of_type()
     {
         ICssMinifier sut = _sut;
@@ -706,7 +705,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_lang_and_dir()
     {
         ICssMinifier sut = _sut;
@@ -719,7 +718,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_selector_function()
     {
         ICssMinifier sut = _sut;
@@ -732,7 +731,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_counter_style_descriptors()
     {
         ICssMinifier sut = _sut;
@@ -745,7 +744,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_font_feature_values_blocks()
     {
         ICssMinifier sut = _sut;
@@ -758,7 +757,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_functions()
     {
         ICssMinifier sut = _sut;
@@ -771,7 +770,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_and_or_groups()
     {
         ICssMinifier sut = _sut;
@@ -784,7 +783,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_supports_selector_not()
     {
         ICssMinifier sut = _sut;
@@ -797,7 +796,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_layer_nested_blocks()
     {
         ICssMinifier sut = _sut;
@@ -810,7 +809,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_scope_with_to_selector()
     {
         ICssMinifier sut = _sut;
@@ -823,7 +822,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_child_of_syntax()
     {
         ICssMinifier sut = _sut;
@@ -836,7 +835,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_not_selector_list()
     {
         ICssMinifier sut = _sut;
@@ -849,7 +848,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_focus_visible_and_placeholder()
     {
         ICssMinifier sut = _sut;
@@ -862,7 +861,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_font_face_descriptors()
     {
         ICssMinifier sut = _sut;
@@ -875,7 +874,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_keyframes_steps_function()
     {
         ICssMinifier sut = _sut;
@@ -888,7 +887,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_color_profile_rule()
     {
         ICssMinifier sut = _sut;
@@ -901,7 +900,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_container_not()
     {
         ICssMinifier sut = _sut;
@@ -914,7 +913,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_media_only_and_comma_list()
     {
         ICssMinifier sut = _sut;
@@ -927,7 +926,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_child_keywords()
     {
         ICssMinifier sut = _sut;
@@ -940,7 +939,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_nth_of_type_of_syntax()
     {
         ICssMinifier sut = _sut;
@@ -953,7 +952,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_counter_style_additive_symbols()
     {
         ICssMinifier sut = _sut;
@@ -966,7 +965,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_page_named_and_pseudo()
     {
         ICssMinifier sut = _sut;
@@ -979,7 +978,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_scope_to_combinators()
     {
         ICssMinifier sut = _sut;
@@ -992,7 +991,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_has_complex_selector_list()
     {
         ICssMinifier sut = _sut;
@@ -1005,7 +1004,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_url_with_spaces_and_escapes()
     {
         ICssMinifier sut = _sut;
@@ -1018,7 +1017,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Minify_handles_calc_min_max_clamp()
     {
         ICssMinifier sut = _sut;
@@ -1031,7 +1030,7 @@ public sealed class CssMinifierTests : FixturedUnitTest
         result.Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public async System.Threading.Tasks.ValueTask MinifyFile_writes_output()
     {
         ICssMinifier sut = _sut;

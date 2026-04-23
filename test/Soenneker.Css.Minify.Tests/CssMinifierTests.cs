@@ -1034,7 +1034,7 @@ public sealed class CssMinifierTests : HostedUnitTest
     public async System.Threading.Tasks.ValueTask MinifyFile_writes_output()
     {
         ICssMinifier sut = _sut;
-        var cancellationToken = TestContext.Current.CancellationToken;
+        var cancellationToken = System.Threading.CancellationToken.None;
 
         string tempDir = Path.Combine(Path.GetTempPath(), $"cssminify-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -1069,3 +1069,4 @@ public sealed class CssMinifierTests : HostedUnitTest
         }
     }
 }
+

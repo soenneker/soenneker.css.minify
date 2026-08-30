@@ -142,6 +142,8 @@ public sealed class CssMinifier : ICssMinifier
                 continue;
             }
 
+            bool precededByWhitespace = pendingSpace;
+
             if (pendingSpace)
             {
                 if (ShouldEmitSpace(prevNonWhitespace, c, blockDepth > 0, inCalc))
@@ -197,7 +199,7 @@ public sealed class CssMinifier : ICssMinifier
             if (c == ';' && (next == '}' || IsSemicolonBeforeBlockEnd(css, i)))
                 continue;
 
-            if (!inUnicodeRangeToken && IsNumberStart(css, i, prevNonWhitespace, prevPrevNonWhitespace))
+            if (!inUnicodeRangeToken && IsNumberStart(css, i, prevNonWhitespace, prevPrevNonWhitespace, precededByWhitespace))
             {
                 i = AppendNormalizedNumber(css, i, ref sb, out char lastAppended);
 
@@ -357,7 +359,8 @@ public sealed class CssMinifier : ICssMinifier
     private static bool IsValueTokenStart(char c) =>
         c.IsAsciiLetterOrDigit() || c is '.' or '-' or '+' or '#' or '"' or '\'';
 
-    private static bool IsNumberStart(ReadOnlySpan<char> css, int index, char prevNonWhitespace, char prevPrevNonWhitespace)
+    private static bool IsNumberStart(ReadOnlySpan<char> css, int index, char prevNonWhitespace, char prevPrevNonWhitespace,
+        bool precededByWhitespace)
     {
         char c = css[index];
         char next = (index + 1 < css.Length) ? css[index + 1] : '\0';
@@ -367,14 +370,14 @@ public sealed class CssMinifier : ICssMinifier
             return false;
 
         if (c.IsAsciiDigit() || char.IsDigit(c))
-            return true;
+            return precededByWhitespace || prevNonWhitespace != '#' && !IsIdentChar(prevNonWhitespace);
 
         if (c == '.' && (next.IsAsciiDigit() || char.IsDigit(next)))
             return true;
 
         if ((c == '-' || c == '+') && (next.IsAsciiDigit() || next == '.' || char.IsDigit(next)))
         {
-            if (prevNonWhitespace == '\0' || IsDelimiter(prevNonWhitespace))
+            if (precededByWhitespace || prevNonWhitespace == '\0' || IsDelimiter(prevNonWhitespace))
                 return true;
         }
 

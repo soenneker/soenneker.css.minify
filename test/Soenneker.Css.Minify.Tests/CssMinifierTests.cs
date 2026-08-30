@@ -160,6 +160,17 @@ public sealed class CssMinifierTests : HostedUnitTest
     }
 
     [Test]
+    public void Minify_does_not_normalize_digits_inside_identifiers_or_colors()
+    {
+        const string input = ".item001 { --gap001: 001px; color: #001122; }";
+        const string expected = ".item001{--gap001:1px;color:#001122}";
+
+        string result = _sut.Minify(input);
+
+        result.Should().Be(expected);
+    }
+
+    [Test]
     public void Minify_strips_comments_between_rules()
     {
         ICssMinifier sut = _sut;

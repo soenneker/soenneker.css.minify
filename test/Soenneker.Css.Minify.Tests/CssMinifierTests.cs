@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using AwesomeAssertions;
 using Soenneker.Css.Minify.Abstract;
 using Soenneker.Tests.HostedUnit;
@@ -1042,10 +1043,9 @@ public sealed class CssMinifierTests : HostedUnitTest
     }
 
     [Test]
-    public async System.Threading.Tasks.ValueTask MinifyFile_writes_output()
+    public async System.Threading.Tasks.ValueTask MinifyFile_writes_output(CancellationToken cancellationToken)
     {
         ICssMinifier sut = _sut;
-        var cancellationToken = System.Threading.CancellationToken.None;
 
         string tempDir = Path.Combine(Path.GetTempPath(), $"cssminify-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

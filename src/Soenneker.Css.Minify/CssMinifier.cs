@@ -61,8 +61,8 @@ public sealed class CssMinifier : ICssMinifier
     private static void MinifyInto(ReadOnlySpan<char> css, ref PooledStringBuilder sb)
     {
         var inString = false;
-        var stringQuote = '\0';
         var inComment = false;
+        var stringQuote = '\0';
         var pendingSpace = false;
 
         var inCalc = false;
@@ -84,12 +84,12 @@ public sealed class CssMinifier : ICssMinifier
 
             if (inComment)
             {
-                if (c == '*' && next == '/')
-                {
-                    inComment = false;
-                    i++;
-                }
+                int commentEnd = css.Slice(i).IndexOf("*/");
+                if (commentEnd < 0)
+                    break;
 
+                i += commentEnd + 1;
+                inComment = false;
                 continue;
             }
 

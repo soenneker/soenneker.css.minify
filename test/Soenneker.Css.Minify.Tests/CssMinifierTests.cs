@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using Soenneker.Utils.File.Abstract;
 using System;
 using System.IO;
 using System.Threading;
@@ -10,10 +12,13 @@ namespace Soenneker.Css.Minify.Tests;
 [ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
 public sealed class CssMinifierTests : HostedUnitTest
 {
+    private readonly IFileUtil _fileUtil;
+
     private readonly ICssMinifier _sut;
 
     public CssMinifierTests(Host host) : base(host)
     {
+        _fileUtil = Resolve<IFileUtil>(true);
         _sut = Resolve<ICssMinifier>(scoped: true);
     }
 
@@ -1058,11 +1063,11 @@ public sealed class CssMinifierTests : HostedUnitTest
             const string input = "/* comment */\nbody {\n  margin: 0px  ;\n  color : red ;\n}\n";
             const string expected = "body{margin:0;color:red}";
 
-            await File.WriteAllTextAsync(inputPath, input, cancellationToken);
+            await _fileUtil.Write(inputPath, input, cancellationToken: cancellationToken);
 
             await sut.MinifyFile(inputPath, outputPath, cancellationToken);
 
-            string result = await File.ReadAllTextAsync(outputPath, cancellationToken);
+            string result = await _fileUtil.Read(outputPath, cancellationToken: cancellationToken);
 
             result.Should().Be(expected);
         }

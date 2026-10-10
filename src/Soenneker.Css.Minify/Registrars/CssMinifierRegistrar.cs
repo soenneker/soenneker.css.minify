@@ -1,3 +1,4 @@
+using Soenneker.Esbuild.Util.Registrars;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soenneker.Css.Minify.Abstract;
@@ -17,7 +18,7 @@ public static class CssMinifierRegistrar
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddCssMinifierAsScoped(this IServiceCollection services)
     {
-        services.AddFileUtilAsScoped().TryAddScoped<ICssMinifier, CssMinifier>();
+        services.AddEsbuildUtilAsScoped().AddFileUtilAsScoped().TryAddScoped<ICssMinifier, CssMinifier>();
         return services;
     }
 
@@ -28,7 +29,7 @@ public static class CssMinifierRegistrar
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddCssMinifierAsSingleton(this IServiceCollection services)
     {
-        services.AddFileUtilAsSingleton().TryAddSingleton<ICssMinifier, CssMinifier>();
+        services.AddEsbuildUtilAsSingleton().AddFileUtilAsSingleton().TryAddSingleton<ICssMinifier, CssMinifier>();
         return services;
     }
 }

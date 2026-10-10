@@ -5,7 +5,7 @@
 
 # Soenneker.Css.Minify
 
-A lightweight CSS text and file minifier that removes comments and unnecessary whitespace while preserving token boundaries.
+A CSS text and file minifier powered by Soenneker.Esbuild.Util.
 
 ## Installation
 
@@ -24,7 +24,7 @@ services.AddCssMinifierAsSingleton();
 ICssMinifier minifier = serviceProvider.GetRequiredService<ICssMinifier>();
 ```
 
-`AddCssMinifierAsScoped()` is also available. Both methods register the matching `IFileUtil` lifetime used by file operations. The minifier itself keeps no per-call state, so singleton registration is suitable when its file utility is also singleton.
+`AddCssMinifierAsScoped()` is also available. Both methods register matching lifetimes for `IEsbuildUtil` and `IFileUtil`.
 
 ## Minify CSS text
 
@@ -38,20 +38,13 @@ const string css = """
     }
     """;
 
-string result = minifier.Minify(css);
-// .nav .item001{margin:0 .5rem;color:#001122;width:calc(100% - 1rem)}
+string result = await minifier.Minify(css, cancellationToken);
+// Returns the CSS minified by esbuild.
 ```
 
-A `ReadOnlySpan<char>` overload is available when the input already resides in a span. Empty input returns an empty string.
+Text minification is asynchronous and accepts a cancellation token. Null, empty, and whitespace input returns an empty string. Span callers should convert their input to a string before calling.
 
-The minifier:
-
-- removes block comments, including `/*! ... */` comments;
-- removes redundant whitespace and a final semicolon before `}`;
-- preserves quoted strings and escapes;
-- preserves required selector, value-list, and `calc()` spacing;
-- normalizes numeric forms such as `00.50em` to `.5em` and removes units from zero where supported;
-- leaves digits inside identifiers, custom-property names, and hex colors unchanged.
+Nonempty input uses esbuild's CSS loader with minification enabled, without bundling or resolving imports. Output follows esbuild defaults, including legal-comment preservation and a trailing newline. Browser targets are not configured, so output assumes modern CSS support.
 
 ## Minify a file
 
@@ -66,6 +59,8 @@ The input file is read completely, minified in memory, and written to the output
 
 ## Scope and validation
 
-This is a purpose-built token minifier, not a full CSS parser. It does not report malformed CSS, resolve imports, add vendor prefixes, rewrite colors, produce source maps, or guarantee every future/proprietary CSS grammar is understood. Run representative browser or CSS parser tests before placing it in a production asset pipeline.
+The esbuild utility manages its Node/npm installation and checks npm for the latest esbuild release on each operation. Nonempty minification therefore requires network access, a writable installation directory, and permission to launch processes. This is intended for asset/build pipelines; cache generated output rather than minifying on every web request.
+
+Esbuild failures and cancellation propagate to the caller. Minification can rewrite CSS syntax and colors, and output may change as esbuild updates.
 
 Minification is not sanitization. Do not treat arbitrary CSS as safe merely because it passed through this library.

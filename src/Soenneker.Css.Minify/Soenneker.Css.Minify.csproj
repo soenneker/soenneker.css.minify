@@ -45,6 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Soenneker.Esbuild.Util" Version="4.0.2" />
         <PackageReference Include="Soenneker.Utils.File" Version="4.0.2292" />
     </ItemGroup>
 
